@@ -7,12 +7,12 @@ export interface DebugLog {
   timestamp: Date
   type: 'info' | 'error' | 'warning' | 'success'
   message: string
-  details?: any
+  details?: unknown
 }
 
 interface DebugContextType {
   logs: DebugLog[]
-  addLog: (type: DebugLog['type'], message: string, details?: any) => void
+  addLog: (type: DebugLog['type'], message: string, details?: unknown) => void
   clearLogs: () => void
   isDebugVisible: boolean
   toggleDebug: () => void
@@ -22,13 +22,10 @@ const DebugContext = createContext<DebugContextType | undefined>(undefined)
 
 export function DebugProvider({ children }: { children: React.ReactNode }) {
   const [logs, setLogs] = useState<DebugLog[]>([])
-  const [isDebugVisible, setIsDebugVisible] = useState(true) // Start with debug panel visible
-  
-  // Enable debug logging in all environments for now
-  const isDebugEnabled = true
-  // Original: process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_DEBUG_MODE === 'true'
+  const [isDebugVisible, setIsDebugVisible] = useState(false)
+  const isDebugEnabled = process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_DEBUG_MODE === 'true'
 
-  const addLog = useCallback((type: DebugLog['type'], message: string, details?: any) => {
+  const addLog = useCallback((type: DebugLog['type'], message: string, details?: unknown) => {
     if (!isDebugEnabled) return
     
     const newLog: DebugLog = {

@@ -3,10 +3,28 @@
 import { useDebug } from '@/lib/debug-context'
 import { useState, useEffect } from 'react'
 
+function formatDebugDetails(details: unknown): string {
+  if (!details) {
+    return ''
+  }
+
+  if (details instanceof Error) {
+    return details.stack || details.message
+  }
+
+  if (typeof details === 'object') {
+    return JSON.stringify(details, null, 2)
+  }
+
+  return String(details)
+}
+
 export default function DebugPanel() {
   const { logs, clearLogs, isDebugVisible, toggleDebug } = useDebug()
   const [isExpanded, setIsExpanded] = useState(true)
-  
+  const [copiedId, setCopiedId] = useState<string | null>(null)
+  const isDebugEnabled = process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_DEBUG_MODE === 'true'
+
   // Add keyboard shortcut (Ctrl/Cmd + D)
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
@@ -15,16 +33,14 @@ export default function DebugPanel() {
         toggleDebug()
       }
     }
-    
+
     window.addEventListener('keydown', handleKeyPress)
     return () => window.removeEventListener('keydown', handleKeyPress)
   }, [toggleDebug])
-  
-  // Always show debug panel (can be toggled by user)
-  // Comment: Enable debug panel in production for now
-  // if (process.env.NODE_ENV === 'production' && process.env.NEXT_PUBLIC_DEBUG_MODE !== 'true') {
-  //   return null
-  // }
+
+  if (!isDebugEnabled) {
+    return null
+  }
 
   if (!isDebugVisible) {
     return (
@@ -55,6 +71,38 @@ export default function DebugPanel() {
           <span className="text-xs text-gray-400">({logs.length} logs)</span>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => {
+              const allLogs = logs.map(log => {
+                const type = log.type.toUpperCase()
+                const time = log.timestamp.toLocaleTimeString()
+                const date = log.timestamp.toLocaleDateString()
+                const fullTimestamp = log.timestamp.toISOString()
+
+                let logText = `[${type}] ${date} ${time}\n`
+                logText += `Timestamp: ${fullTimestamp}\n`
+                logText += `Message: ${log.message}\n`
+
+                if (log.details) {
+                  logText += `Details:\n`
+                  logText += formatDebugDetails(log.details)
+                }
+
+                return logText
+              }).join('\n' + '='.repeat(80) + '\n\n')
+
+              navigator.clipboard.writeText(allLogs)
+              setCopiedId('all')
+              setTimeout(() => setCopiedId(null), 2000)
+            }}
+            className="text-gray-400 hover:text-white p-1"
+            title="Copy all logs"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            </svg>
+          </button>
+          {copiedId === 'all' && <span className="text-xs text-green-400">Copied!</span>}
           <button
             onClick={clearLogs}
             className="text-gray-400 hover:text-white p-1"
@@ -118,19 +166,51 @@ export default function DebugPanel() {
                       </span>
                     </div>
                     <div className="text-xs">{log.message}</div>
-                    {log.details && (
+                    {Boolean(log.details) && (
                       <details className="mt-2">
                         <summary className="cursor-pointer text-xs text-gray-400 hover:text-gray-300">
                           Details
                         </summary>
                         <pre className="mt-1 text-xs overflow-x-auto p-2 bg-black/30 rounded">
-                          {typeof log.details === 'object' 
-                            ? JSON.stringify(log.details, null, 2)
-                            : log.details}
+                          {formatDebugDetails(log.details)}
                         </pre>
                       </details>
                     )}
                   </div>
+                  <button
+                    onClick={() => {
+                      const type = log.type.toUpperCase()
+                      const time = log.timestamp.toLocaleTimeString()
+                      const date = log.timestamp.toLocaleDateString()
+                      const fullTimestamp = log.timestamp.toISOString()
+
+                      let logText = `[${type}] ${date} ${time}\n`
+                      logText += `Timestamp: ${fullTimestamp}\n`
+                      logText += `Message: ${log.message}\n`
+                      logText += `Log ID: ${log.id}\n`
+
+                      if (log.details) {
+                        logText += `\nDetails:\n`
+                        logText += formatDebugDetails(log.details)
+                      }
+
+                      navigator.clipboard.writeText(logText)
+                      setCopiedId(log.id)
+                      setTimeout(() => setCopiedId(null), 2000)
+                    }}
+                    className="ml-2 text-gray-400 hover:text-white p-1 flex-shrink-0"
+                    title="Copy this log"
+                  >
+                    {copiedId === log.id ? (
+                      <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    ) : (
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                    )}
+                  </button>
                 </div>
               </div>
             ))

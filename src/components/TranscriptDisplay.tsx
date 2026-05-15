@@ -33,16 +33,16 @@ export default function TranscriptDisplay({ transcript, videoUrl }: TranscriptDi
   }
 
   return (
-    <div className="mt-8 space-y-4">
+    <div className="space-y-5">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h2 className="text-2xl font-semibold text-gray-800 dark:text-white">
+        <h2 className="text-3xl font-black text-slate-950">
           Transcript
         </h2>
         <div className="flex gap-2">
           <button
             onClick={handleCopy}
-            className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg
-                     transition-colors duration-200 flex items-center gap-2"
+            className="flex items-center gap-2 rounded-lg bg-slate-800 px-4 py-2 font-semibold text-white
+                     transition-colors duration-200 hover:bg-slate-700"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
@@ -52,8 +52,8 @@ export default function TranscriptDisplay({ transcript, videoUrl }: TranscriptDi
           </button>
           <button
             onClick={handleDownload}
-            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg
-                     transition-colors duration-200 flex items-center gap-2"
+            className="flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 font-semibold text-white
+                     transition-colors duration-200 hover:bg-emerald-500"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
@@ -64,17 +64,17 @@ export default function TranscriptDisplay({ transcript, videoUrl }: TranscriptDi
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-        <div className="mb-4 pb-4 border-b border-gray-200 dark:border-gray-700">
-          <p className="text-sm text-gray-500 dark:text-gray-400">
+      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xl shadow-slate-200/70 sm:p-6">
+        <div className="mb-4 border-b border-slate-200 pb-4">
+          <p className="break-all text-sm text-slate-500">
             Source: <a href={videoUrl} target="_blank" rel="noopener noreferrer" 
-                      className="text-blue-500 hover:underline">
+                      className="font-semibold text-blue-600 hover:underline">
               {videoUrl}
             </a>
           </p>
         </div>
-        <div className="prose prose-gray dark:prose-invert max-w-none">
-          <pre className="whitespace-pre-wrap text-gray-700 dark:text-gray-300 font-normal">
+        <div className="max-h-[70vh] overflow-y-auto rounded-xl bg-slate-50 p-4">
+          <pre className="whitespace-pre-wrap break-words text-sm leading-7 text-slate-700 sm:text-base">
             {transcript}
           </pre>
         </div>

@@ -21,23 +21,24 @@ export default function URLInput({ onSubmit, loading }: URLInputProps) {
     <form onSubmit={handleSubmit} className="w-full">
       <div className="flex flex-col sm:flex-row gap-4">
         <input
-          type="text"
+          id="youtube-url"
+          type="url"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           placeholder="Paste YouTube URL here (e.g., https://www.youtube.com/watch?v=...)"
-          className="flex-1 px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 
-                     bg-white dark:bg-gray-800 text-gray-900 dark:text-white
-                     focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                     placeholder-gray-400 dark:placeholder-gray-500"
+          aria-label="YouTube video URL"
+          className="flex-1 rounded-xl border border-white/15 bg-white px-4 py-3 text-slate-950
+                     placeholder-slate-400 shadow-sm outline-none transition
+                     focus:border-cyan-300 focus:ring-4 focus:ring-cyan-300/20"
           disabled={loading}
         />
         <button
           type="submit"
           disabled={loading || !url.trim()}
-          className="px-8 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400
-                     text-white font-semibold rounded-lg transition-colors duration-200
-                     focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
-                     disabled:cursor-not-allowed"
+          className="rounded-xl bg-cyan-300 px-8 py-3 font-bold text-slate-950
+                     shadow-lg shadow-cyan-950/20 transition hover:bg-cyan-200
+                     focus:outline-none focus:ring-4 focus:ring-cyan-300/30
+                     disabled:cursor-not-allowed disabled:bg-slate-500 disabled:text-slate-200"
         >
           {loading ? (
             <span className="flex items-center gap-2">
@@ -52,7 +53,7 @@ export default function URLInput({ onSubmit, loading }: URLInputProps) {
           )}
         </button>
       </div>
-      <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+      <p className="mt-3 text-sm text-slate-300">
         Supports youtube.com and youtu.be URLs
       </p>
     </form>

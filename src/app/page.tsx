@@ -1,39 +1,46 @@
 'use client'
 
-import React, { useState } from 'react'
+import { useState } from 'react'
+import ManualSubtitleInput from '@/components/ManualSubtitleInput'
 import TranscriptDisplay from '@/components/TranscriptDisplay'
 import URLInput from '@/components/URLInput'
-import ManualSubtitleInput from '@/components/ManualSubtitleInput'
-import ClientTime from '@/components/ClientTime'
-import { useDebug } from '@/lib/debug-context'
+
+interface TranscriptApiResponse {
+  transcript?: string
+  error?: string
+}
+
+const features = [
+  {
+    title: 'Caption-first extraction',
+    description: 'Uses available YouTube captions and fallback methods to return clean transcript text.'
+  },
+  {
+    title: 'Built for reuse',
+    description: 'Copy the result into notes, research docs, briefs, study material, or summaries.'
+  },
+  {
+    title: 'Manual fallback',
+    description: 'If a video blocks automatic captions, paste a subtitle file URL and keep working.'
+  }
+]
 
 export default function Home() {
-  const [transcript, setTranscript] = useState<string>('')
+  const [transcript, setTranscript] = useState('')
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string>('')
-  const [videoUrl, setVideoUrl] = useState<string>('')
-  const { addLog } = useDebug()
-  
-  // Add initial log to confirm debug panel is working
-  React.useEffect(() => {
-    addLog('info', 'YouTube to Text app loaded successfully', {
-      timestamp: new Date().toISOString(),
-      environment: process.env.NODE_ENV
-    })
-  }, [addLog])
+  const [error, setError] = useState('')
+  const [videoUrl, setVideoUrl] = useState('')
 
   const handleExtractTranscript = async (url: string) => {
-    console.log('Starting extraction for:', url)
     setLoading(true)
     setError('')
     setVideoUrl(url)
-    setTranscript('') // Clear previous transcript
-    
+    setTranscript('')
+
+    const controller = new AbortController()
+    const timeoutId = window.setTimeout(() => controller.abort(), 35000)
+
     try {
-      // Add timeout to prevent hanging
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
-      
       const response = await fetch('/api/youtube-transcript', {
         method: 'POST',
         headers: {
@@ -42,211 +49,121 @@ export default function Home() {
         body: JSON.stringify({ url }),
         signal: controller.signal
       })
-      
-      clearTimeout(timeoutId)
 
-      const data = await response.json()
-      console.log('API Response:', data)
+      const data = await response.json() as TranscriptApiResponse
 
       if (!response.ok) {
-        // Include debug steps in error if available
-        let errorMsg = data.error || 'Failed to extract transcript'
-        if (data.debug && data.debug.steps) {
-          console.log('Debug steps:', data.debug.steps)
-        }
-        throw new Error(errorMsg)
+        throw new Error(data.error || 'Unable to extract a transcript for this video.')
       }
 
-      if (data.transcript) {
-        setTranscript(data.transcript)
-      } else {
-        throw new Error('No transcript data received')
+      if (!data.transcript) {
+        throw new Error('No transcript data was returned. Try another video with captions enabled.')
       }
+
+      setTranscript(data.transcript)
     } catch (err) {
-      console.error('Extraction error:', err)
-      let errorMessage = 'An error occurred'
-      
-      if (err instanceof Error) {
-        if (err.name === 'AbortError') {
-          errorMessage = 'Request timed out after 30 seconds'
-        } else {
-          errorMessage = err.message
-        }
+      if (err instanceof Error && err.name === 'AbortError') {
+        setError('The request took too long. Please try again or use the manual subtitle option.')
+      } else if (err instanceof Error) {
+        setError(err.message)
+      } else {
+        setError('Something went wrong while extracting the transcript.')
       }
-      
-      setError(errorMessage)
     } finally {
+      window.clearTimeout(timeoutId)
       setLoading(false)
     }
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
-      {/* Version indicator for debugging */}
-      <div className="fixed top-4 right-4 bg-green-500 text-white px-3 py-1 rounded-full text-xs">
-        v1.2.0 - Multiple Extraction Methods
-      </div>
-      
-      <div className="container mx-auto px-4 py-8">
-        <header className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-800 dark:text-white mb-4">
-            YouTube to Text
-          </h1>
-          <p className="text-lg text-gray-600 dark:text-gray-300">
-            Extract transcripts from YouTube videos instantly
-          </p>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-            Press Ctrl/Cmd + D to toggle debug panel
-          </p>
-        </header>
-
-        <div className="max-w-4xl mx-auto">
-          <URLInput 
-            onSubmit={handleExtractTranscript}
-            loading={loading}
-          />
-
-          {loading && (
-            <div className="mt-8 flex flex-col items-center justify-center space-y-4">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-              <p className="text-gray-600 dark:text-gray-300">Extracting transcript...</p>
+    <main className="min-h-screen bg-slate-950 text-white">
+      <section className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.35),transparent_34%),radial-gradient(circle_at_80%_20%,rgba(20,184,166,0.22),transparent_28%),linear-gradient(135deg,#020617,#0f172a_55%,#111827)]" />
+        <div className="relative mx-auto flex min-h-screen w-full max-w-6xl flex-col px-5 py-6 sm:px-8 lg:px-10">
+          <nav className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-sm font-black text-slate-950">
+                YT
+              </span>
+              <span className="text-sm font-semibold tracking-wide text-slate-200">YouTube to Text</span>
             </div>
-          )}
+            <a
+              href="https://github.com/WeiProduct"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-lg border border-white/15 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:border-white/35 hover:bg-white/10"
+            >
+              WeiProduct
+            </a>
+          </nav>
 
-          {error && !loading && (
-            <div className="mt-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-              <div className="flex items-start space-x-3">
-                <svg className="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <div className="flex-1">
-                  <p className="text-red-600 dark:text-red-400 font-medium">Error</p>
-                  <p className="text-red-600 dark:text-red-400 text-sm mt-1">{error}</p>
-                  {error.includes('captions') && (
-                    <div className="mt-3">
-                      <p className="text-red-500 dark:text-red-300 text-xs">
-                        Tip: Try a different video or <ManualSubtitleInput onSubmit={(text) => {
-                          setTranscript(text)
-                          setError('')
-                        }} />
-                      </p>
-                    </div>
-                  )}
-                </div>
+          <div className="grid flex-1 items-center gap-12 py-16 lg:grid-cols-[1fr_0.92fr]">
+            <div>
+              <p className="text-sm font-bold uppercase tracking-[0.18em] text-cyan-300">AI workflow utility</p>
+              <h1 className="mt-5 max-w-3xl text-5xl font-black leading-[0.95] tracking-tight text-white sm:text-6xl lg:text-7xl">
+                Convert YouTube videos into clean text transcripts.
+              </h1>
+              <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-300">
+                Paste a video link, extract available captions, then copy or download the result for research,
+                study notes, content review, or AI summarization.
+              </p>
+
+              <div className="mt-8 grid gap-3 sm:grid-cols-3">
+                {features.map((feature) => (
+                  <article key={feature.title} className="rounded-xl border border-white/10 bg-white/[0.06] p-4 backdrop-blur">
+                    <h2 className="text-sm font-bold text-white">{feature.title}</h2>
+                    <p className="mt-2 text-sm leading-6 text-slate-300">{feature.description}</p>
+                  </article>
+                ))}
               </div>
             </div>
-          )}
 
-          {transcript && !loading && (
-            <TranscriptDisplay 
-              transcript={transcript}
-              videoUrl={videoUrl}
-            />
-          )}
-        </div>
+            <div className="rounded-2xl border border-white/12 bg-white/[0.08] p-5 shadow-2xl shadow-blue-950/30 backdrop-blur-xl sm:p-7">
+              <div className="mb-6">
+                <p className="text-sm font-semibold text-cyan-200">Transcript extractor</p>
+                <h2 className="mt-2 text-2xl font-bold text-white">Start with a YouTube URL</h2>
+              </div>
 
-        <footer className="mt-16 text-center text-sm text-gray-500 dark:text-gray-400">
-          <p>Only works with videos that have captions enabled</p>
-        </footer>
-      </div>
-      
-      {/* Inline Debug Panel - Always Visible */}
-      <div className="fixed bottom-4 right-4 w-96 max-h-[500px] bg-black/95 text-white rounded-lg shadow-2xl">
-        {/* Header */}
-        <div className="bg-gray-800 p-3 rounded-t-lg flex justify-between items-center">
-          <h3 className="text-sm font-bold text-green-400 flex items-center gap-2">
-            <span className="animate-pulse">🔴</span> Debug Console
-          </h3>
-          <button 
-            onClick={() => window.location.reload()} 
-            className="text-gray-400 hover:text-white text-xs"
-          >
-            Refresh
-          </button>
-        </div>
-        
-        {/* Content */}
-        <div className="p-4 space-y-2 text-xs font-mono overflow-y-auto max-h-[400px]">
-          {/* Status */}
-          <div className="p-2 bg-blue-900/50 rounded border border-blue-700/50">
-            <div className="text-blue-400 font-bold">📊 STATUS</div>
-            <div className="text-blue-200 mt-1">
-              App Version: v1.2.0<br/>
-              Environment: Production<br/>
-              Debug Mode: Enabled<br/>
-              Time: <ClientTime />
-            </div>
-          </div>
-          
-          {/* Current State */}
-          <div className="p-2 bg-purple-900/50 rounded border border-purple-700/50">
-            <div className="text-purple-400 font-bold">🔍 CURRENT STATE</div>
-            <div className="text-purple-200 mt-1">
-              Loading: {loading ? 'Yes' : 'No'}<br/>
-              Has Error: {error ? 'Yes' : 'No'}<br/>
-              Has Transcript: {transcript ? 'Yes' : 'No'}<br/>
-              URL Entered: {videoUrl ? 'Yes' : 'No'}
-            </div>
-          </div>
-          
-          {/* URL Info */}
-          {videoUrl && (
-            <div className="p-2 bg-green-900/50 rounded border border-green-700/50">
-              <div className="text-green-400 font-bold">🔗 URL INFO</div>
-              <div className="text-green-200 mt-1 break-all">
-                {videoUrl}<br/>
-                Video ID: {videoUrl.match(/v=([^&]+)/)?.[1] || 'Unknown'}
-              </div>
-            </div>
-          )}
-          
-          {/* Loading State */}
-          {loading && (
-            <div className="p-2 bg-yellow-900/50 rounded border border-yellow-700/50">
-              <div className="text-yellow-400 font-bold animate-pulse">⏳ LOADING</div>
-              <div className="text-yellow-200 mt-1">
-                Extracting transcript...<br/>
-                This may take a few seconds
-              </div>
-            </div>
-          )}
-          
-          {/* Error Details */}
-          {error && (
-            <div className="p-2 bg-red-900/50 rounded border border-red-700/50">
-              <div className="text-red-400 font-bold">❌ ERROR DETAILS</div>
-              <div className="text-red-200 mt-1 whitespace-pre-wrap">
-                {error}
-              </div>
-              {!error.includes('Attempt details:') && (
-                <div className="text-red-300 text-xs mt-2">
-                  Tip: Make sure the video has captions/CC enabled
+              <URLInput onSubmit={handleExtractTranscript} loading={loading} />
+
+              {loading && (
+                <div className="mt-7 rounded-xl border border-blue-300/20 bg-blue-400/10 p-5">
+                  <div className="flex items-center gap-3">
+                    <div className="h-5 w-5 animate-spin rounded-full border-2 border-blue-200 border-t-transparent" />
+                    <p className="text-sm font-semibold text-blue-100">Extracting transcript...</p>
+                  </div>
+                  <p className="mt-2 text-sm text-slate-300">Some videos take longer if captions need fallback extraction.</p>
                 </div>
               )}
-            </div>
-          )}
-          
-          {/* Success */}
-          {transcript && !loading && (
-            <div className="p-2 bg-green-900/50 rounded border border-green-700/50">
-              <div className="text-green-400 font-bold">✅ SUCCESS</div>
-              <div className="text-green-200 mt-1">
-                Transcript extracted!<br/>
-                Length: {transcript.length} characters
-              </div>
-            </div>
-          )}
-          
-          {/* Instructions */}
-          <div className="p-2 bg-gray-800 rounded border border-gray-700">
-            <div className="text-gray-400 font-bold">ℹ️ INFO</div>
-            <div className="text-gray-300 mt-1">
-              This debug panel shows real-time app state.<br/>
-              Original debug panel (Ctrl+D) seems to be not loading.
+
+              {error && !loading && (
+                <div className="mt-7 rounded-xl border border-red-300/25 bg-red-500/10 p-5">
+                  <p className="font-semibold text-red-100">Transcript unavailable</p>
+                  <p className="mt-2 text-sm leading-6 text-red-100/80">{error}</p>
+                  <div className="mt-4 text-sm text-red-50">
+                    <ManualSubtitleInput onSubmit={(text) => {
+                      setTranscript(text)
+                      setError('')
+                    }} />
+                  </div>
+                </div>
+              )}
+
+              <p className="mt-6 text-xs leading-5 text-slate-400">
+                Works best with videos that have captions or subtitles enabled. Private, restricted, or captionless videos may not return a transcript.
+              </p>
             </div>
           </div>
         </div>
-      </div>
+      </section>
+
+      {transcript && !loading && (
+        <section className="bg-slate-50 px-5 py-12 text-slate-950 sm:px-8 lg:px-10">
+          <div className="mx-auto max-w-6xl">
+            <TranscriptDisplay transcript={transcript} videoUrl={videoUrl} />
+          </div>
+        </section>
+      )}
     </main>
   )
 }

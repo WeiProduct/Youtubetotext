@@ -7,8 +7,18 @@ import DebugPanel from '@/components/DebugPanel'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'YouTube to Text Converter',
-  description: 'Convert YouTube videos to text transcripts',
+  title: 'YouTube to Text | Transcript Extractor',
+  description: 'Extract clean text transcripts from YouTube videos for notes, research, and AI workflows.',
+  openGraph: {
+    title: 'YouTube to Text | Transcript Extractor',
+    description: 'Extract clean text transcripts from YouTube videos for notes, research, and AI workflows.',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary',
+    title: 'YouTube to Text | Transcript Extractor',
+    description: 'Extract clean text transcripts from YouTube videos for notes, research, and AI workflows.',
+  },
 }
 
 export default function RootLayout({
